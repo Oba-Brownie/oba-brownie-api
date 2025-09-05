@@ -1,0 +1,13 @@
+{
+  "name": "obabrownie-backend",
+  "version": "1.0.0",
+  "description": "Backend para dar baixa de estoque da Oba Brownie no Contentful.",
+  "main": "api/dar-baixa-estoque.js",
+  "scripts": {
+    "start": "node ."
+  },
+  "dependencies": {
+    "contentful-management": "^11.54.4",
+    "dotenv": "^17.2.2"
+  }
+}
