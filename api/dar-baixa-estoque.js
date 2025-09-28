@@ -7,19 +7,29 @@ module.exports = async (req, res) => {
   const CONTENTFUL_SPACE_ID = process.env.CONTENTFUL_SPACE_ID;
   const CONTENTFUL_MANAGEMENT_TOKEN = process.env.CONTENTFUL_MANAGEMENT_TOKEN;
   const CONTENTFUL_ENVIRONMENT_ID = process.env.CONTENTFUL_ENVIRONMENT_ID || 'master';
-  const FRONTEND_URL = process.env.FRONTEND_URL;
 
-  res.setHeader('Access-Control-Allow-Origin', FRONTEND_URL); 
+  // --- INÍCIO DO BLOCO CORS ATUALIZADO ---
+  const allowedOrigins = [
+      'https://oba-brownie.github.io', // Seu site em produção
+      'http://127.0.0.1:5500',        // Seu ambiente de desenvolvimento (localhost)
+      'http://192.168.1.83:5500'       // Outro endereço local que você usa
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader(
-    'Access-Control-Allow-Headers',
-    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+      'Access-Control-Allow-Headers',
+      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
   );
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+      return res.status(200).end();
   }
+  // --- FIM DO BLOCO CORS ---
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });
@@ -44,14 +54,13 @@ module.exports = async (req, res) => {
     const environment = await space.getEnvironment(CONTENTFUL_ENVIRONMENT_ID);
 
     // ===================================================================
-    // ETAPA 1: LOOP DE VALIDAÇÃO DE ESTOQUE (NOVA LÓGICA)
+    // ETAPA 1: LOOP DE VALIDAÇÃO DE ESTOQUE
     // ===================================================================
     for (const item of cart) {
       const entry = await environment.getEntry(item.id);
       const estoqueReal = entry.fields.estoque['en-US'];
 
       if (item.quantity > estoqueReal) {
-        // Se a quantidade pedida for maior que o estoque, retorna um erro e para tudo.
         return res.status(400).json({ 
           error: `Estoque insuficiente para o produto: "${item.name}". Disponível: ${estoqueReal}, Pedido: ${item.quantity}.` 
         });
@@ -60,7 +69,6 @@ module.exports = async (req, res) => {
 
     // ===================================================================
     // ETAPA 2: LOOP DE ATUALIZAÇÃO DE ESTOQUE
-    // Este código só será executado se a ETAPA 1 passar sem erros.
     // ===================================================================
     for (const item of cart) {
       const entry = await environment.getEntry(item.id);
